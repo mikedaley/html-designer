@@ -1,4 +1,4 @@
-import { Layout, Palette, Settings, Type } from 'lucide-react';
+import { Image as ImageIcon, Layout, List, Palette, Settings, Type } from 'lucide-react';
 
 import React from 'react';
 import { useEditorStore } from '../store/editorStore';
@@ -41,6 +41,99 @@ export const PropertyPanel: React.FC = () => {
     updateElementStyle(selectedElement.id, property, value);
   };
 
+  // Element-specific properties
+  const getElementSpecificProperties = () => {
+    switch (selectedElement.type) {
+      case 'img':
+        return (
+          <div className="mb-6">
+            <div className="flex items-center space-x-2 mb-3">
+              <ImageIcon className="w-4 h-4 text-gray-600" />
+              <h3 className="text-sm font-medium text-gray-700">Image Properties</h3>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Source URL</label>
+                <input
+                  type="text"
+                  value={selectedElement.attributes.src || ''}
+                  onChange={(e) => handleAttributeChange('src', e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded-md text-sm"
+                  placeholder="https://example.com/image.jpg"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Alt Text</label>
+                <input
+                  type="text"
+                  value={selectedElement.attributes.alt || ''}
+                  onChange={(e) => handleAttributeChange('alt', e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded-md text-sm"
+                  placeholder="Image description"
+                />
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'ul':
+      case 'ol':
+        return (
+          <div className="mb-6">
+            <div className="flex items-center space-x-2 mb-3">
+              <List className="w-4 h-4 text-gray-600" />
+              <h3 className="text-sm font-medium text-gray-700">List Properties</h3>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">List Style Type</label>
+                <select
+                  value={selectedElement.styles.listStyleType || 'disc'}
+                  onChange={(e) => handleStyleChange('listStyleType', e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded-md text-sm"
+                >
+                  <option value="disc">Disc</option>
+                  <option value="circle">Circle</option>
+                  <option value="square">Square</option>
+                  <option value="decimal">Decimal</option>
+                  <option value="lower-alpha">Lower Alpha</option>
+                  <option value="upper-alpha">Upper Alpha</option>
+                  <option value="lower-roman">Lower Roman</option>
+                  <option value="upper-roman">Upper Roman</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        );
+
+      case 'table':
+        return (
+          <div className="mb-6">
+            <div className="flex items-center space-x-2 mb-3">
+              <Layout className="w-4 h-4 text-gray-600" />
+              <h3 className="text-sm font-medium text-gray-700">Table Properties</h3>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Border Collapse</label>
+                <select
+                  value={selectedElement.styles.borderCollapse || 'separate'}
+                  onChange={(e) => handleStyleChange('borderCollapse', e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded-md text-sm"
+                >
+                  <option value="separate">Separate</option>
+                  <option value="collapse">Collapse</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
   const commonStyles = [
     { label: 'Width', property: 'width', type: 'text', placeholder: 'e.g., 100px, 50%' },
     { label: 'Height', property: 'height', type: 'text', placeholder: 'e.g., 100px, auto' },
@@ -73,6 +166,9 @@ export const PropertyPanel: React.FC = () => {
         </p>
       </div>
 
+      {/* Element-specific properties */}
+      {getElementSpecificProperties()}
+
       {/* Content Section */}
       {!['img', 'br', 'hr'].includes(selectedElement.type) && (
         <div className="mb-6">
@@ -87,38 +183,6 @@ export const PropertyPanel: React.FC = () => {
             rows={3}
             placeholder="Enter content..."
           />
-        </div>
-      )}
-
-      {/* Attributes Section */}
-      {selectedElement.type === 'img' && (
-        <div className="mb-6">
-          <div className="flex items-center space-x-2 mb-3">
-            <Settings className="w-4 h-4 text-gray-600" />
-            <h3 className="text-sm font-medium text-gray-700">Attributes</h3>
-          </div>
-          <div className="space-y-3">
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Source URL</label>
-              <input
-                type="text"
-                value={selectedElement.attributes.src || ''}
-                onChange={(e) => handleAttributeChange('src', e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-md text-sm"
-                placeholder="https://example.com/image.jpg"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Alt Text</label>
-              <input
-                type="text"
-                value={selectedElement.attributes.alt || ''}
-                onChange={(e) => handleAttributeChange('alt', e.target.value)}
-                className="w-full p-2 border border-gray-300 rounded-md text-sm"
-                placeholder="Image description"
-              />
-            </div>
-          </div>
         </div>
       )}
 

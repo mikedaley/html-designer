@@ -1,6 +1,7 @@
+import { ChevronDown, ChevronRight, Copy, Plus, Trash2 } from 'lucide-react';
+import { HTMLElement, useEditorStore } from '../store/editorStore';
+
 import React from 'react';
-import { useEditorStore, HTMLElement } from '../store/editorStore';
-import { Trash2, Copy } from 'lucide-react';
 
 export const Canvas: React.FC = () => {
   const {
@@ -9,7 +10,9 @@ export const Canvas: React.FC = () => {
     hoveredElementId,
     selectElement,
     setHoveredElement,
-    deleteElement
+    deleteElement,
+    addElement,
+    getChildren
   } = useEditorStore();
 
   const handleElementClick = (e: React.MouseEvent, elementId: string) => {
@@ -26,18 +29,29 @@ export const Canvas: React.FC = () => {
     deleteElement(elementId);
   };
 
-  const renderElement = (element: HTMLElement): React.ReactElement => {
+  const handleAddInside = (e: React.MouseEvent, parentId: string) => {
+    e.stopPropagation();
+    // This will be handled by a context menu or dropdown
+    console.log('Add inside:', parentId);
+  };
+
+  const renderElement = (element: HTMLElement, depth: number = 0): React.ReactElement => {
     const isSelected = selectedElementId === element.id;
     const isHovered = hoveredElementId === element.id;
+    const children = getChildren(element.id);
+    const hasChildren = children.length > 0;
     
     const elementStyle = {
       ...element.styles,
       position: 'relative' as const,
       cursor: 'pointer',
       transition: 'all 0.2s ease',
-      outline: isSelected ? '2px solid #3b82f6' : 'none',
+      outline: isSelected ? '3px solid #3b82f6' : 'none',
       outlineOffset: '2px',
-      backgroundColor: isSelected ? '#eff6ff' : isHovered ? '#f8fafc' : 'transparent',
+      backgroundColor: isSelected ? '#eff6ff' : isHovered ? '#f8fafc' : element.styles.backgroundColor,
+      transform: isSelected ? 'scale(1.02)' : 'scale(1)',
+      boxShadow: isSelected ? '0 4px 12px rgba(59, 130, 246, 0.3)' : isHovered ? '0 2px 8px rgba(0, 0, 0, 0.1)' : 'none',
+      marginLeft: `${depth * 20}px`,
     };
 
     const elementProps: any = {
@@ -62,6 +76,61 @@ export const Canvas: React.FC = () => {
     );
   };
 
+  const renderElementWithControls = (element: HTMLElement, depth: number = 0) => {
+    const isSelected = selectedElementId === element.id;
+    const isHovered = hoveredElementId === element.id;
+    const children = getChildren(element.id);
+    const hasChildren = children.length > 0;
+
+    return (
+      <div key={element.id} className="relative group">
+        <div className="relative">
+          {renderElement(element, depth)}
+          
+          {/* Element Controls */}
+          {(isSelected || isHovered) && (
+            <div className="absolute -top-2 -right-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+              <button
+                onClick={(e) => handleAddInside(e, element.id)}
+                className="p-1 bg-green-500 text-white rounded-full hover:bg-green-600 transition-colors"
+                title="Add element inside"
+              >
+                <Plus size={12} />
+              </button>
+              <button
+                onClick={(e) => handleDeleteElement(e, element.id)}
+                className="p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                title="Delete element"
+              >
+                <Trash2 size={12} />
+              </button>
+            </div>
+          )}
+          
+          {/* Element Label */}
+          {isSelected && (
+            <div className="absolute -top-8 left-0 bg-blue-500 text-white text-xs px-2 py-1 rounded flex items-center space-x-1">
+              <span className="font-mono">{element.type}</span>
+              {hasChildren && (
+                <span className="text-xs opacity-75">({children.length})</span>
+              )}
+            </div>
+          )}
+
+          {/* Nested Elements */}
+          {hasChildren && (
+            <div className="mt-2 space-y-1">
+              {children.map(child => renderElementWithControls(child, depth + 1))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // Get root elements (those without parents)
+  const rootElements = elements.filter(element => !element.parentId);
+
   return (
     <div className="flex-1 bg-gray-50 p-6 overflow-auto">
       <div className="max-w-4xl mx-auto">
@@ -84,42 +153,7 @@ export const Canvas: React.FC = () => {
               </div>
             ) : (
               <div className="space-y-2">
-                {elements.map((element) => {
-                  const isSelected = selectedElementId === element.id;
-                  const isHovered = hoveredElementId === element.id;
-                  
-                  return (
-                    <div key={element.id} className="relative group">
-                      {renderElement(element)}
-                      
-                      {/* Element Controls */}
-                      {(isSelected || isHovered) && (
-                        <div className="absolute -top-2 -right-2 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button
-                            onClick={(e) => handleDeleteElement(e, element.id)}
-                            className="p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
-                            title="Delete element"
-                          >
-                            <Trash2 size={12} />
-                          </button>
-                          <button
-                            className="p-1 bg-gray-500 text-white rounded-full hover:bg-gray-600 transition-colors"
-                            title="Duplicate element"
-                          >
-                            <Copy size={12} />
-                          </button>
-                        </div>
-                      )}
-                      
-                      {/* Element Label */}
-                      {isSelected && (
-                        <div className="absolute -top-8 left-0 bg-blue-500 text-white text-xs px-2 py-1 rounded">
-                          {element.type}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+                {rootElements.map((element) => renderElementWithControls(element))}
               </div>
             )}
           </div>
